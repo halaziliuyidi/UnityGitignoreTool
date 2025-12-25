@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity .gitignore 生成器</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* 自定义滚动条样式 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        /* 预览区域滚动条 */
+        .preview-scrollbar::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .preview-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        .preview-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 5px;
+            border: 2px solid #1e293b;
+        }
+        .preview-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons (Inline SVGs to replace lucide-react) ---
+        const FileCode = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>
+        );
+        const Plus = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        );
+        const Trash2 = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+        );
+        const Copy = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        );
+        const Check = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12"/></svg>
+        );
+        const Download = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        );
+        const AlertCircle = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        );
+        const RefreshCw = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        );
+
+        const UnityGitignoreGenerator = () => {
+            // 基础 Unity 模板 (基于 GitHub 官方 Unity.gitignore)
+            const baseTemplate = `# This .gitignore was generated specifically for Unity projects
+
+# Standard Unity Folders
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# MemoryCaptures can get excessive
+/[Mm]emoryCaptures/
+
+# Asset meta data should only be ignored when the corresponding asset is also ignored
+!/[Aa]ssets/**/*.meta
+
+# Autogenerated Jetbrains Rider plugin
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# JetBrains Rider
+.idea/
+*.sln.DotSettings.user
+
+# Visual Studio cache directory
+.vs/
+
+# Gradle cache directory
+.gradle/
+
+# Autogenerated VS/MD/Consulo solution and project files
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.VC.db
+
+# Unity3D generated meta files
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity3D generated file on crash reports
+sysinfo.txt
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics generated file
+crashlytics-build.properties
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db`;
+
+            const [customRules, setCustomRules] = useState([]);
+            const [inputValue, setInputValue] = useState('');
+            const [finalContent, setFinalContent] = useState('');
+            const [copied, setCopied] = useState(false);
+
+            // 初始化或当规则改变时更新内容
+            useEffect(() => {
+                let content = baseTemplate;
+                
+                if (customRules.length > 0) {
+                    content += `\n\n# --- Custom User Rules ---\n`;
+                    content += customRules.join('\n');
+                }
+
+                setFinalContent(content);
+            }, [customRules, baseTemplate]);
+
+            // 添加新规则
+            const handleAddRule = () => {
+                if (!inputValue.trim()) return;
+                
+                // 简单的去重
+                if (!customRules.includes(inputValue.trim())) {
+                    setCustomRules([...customRules, inputValue.trim()]);
+                }
+                setInputValue('');
+            };
+
+            // 按回车键添加
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    handleAddRule();
+                }
+            };
+
+            // 删除规则
+            const handleRemoveRule = (index) => {
+                const newRules = customRules.filter((_, i) => i !== index);
+                setCustomRules(newRules);
+            };
+
+            // 复制到剪贴板
+            const handleCopy = () => {
+                const textArea = document.createElement("textarea");
+                textArea.value = finalContent;
+                
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                textArea.style.top = "0";
+                document.body.appendChild(textArea);
+                
+                textArea.focus();
+                textArea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    }
+                } catch (err) {
+                    console.error('Unable to copy', err);
+                }
+                
+                document.body.removeChild(textArea);
+            };
+
+            // 下载文件
+            const handleDownload = () => {
+                const element = document.createElement("a");
+                const file = new Blob([finalContent], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = ".gitignore";
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            };
+
+            // 推荐的常用忽略项快速添加
+            const quickAdds = [
+                { label: "Secrets 文件夹", value: "Secrets/" },
+                { label: "Art 源文件 (*.psd)", value: "*.psd" },
+                { label: "Blender 备份 (*.blend1)", value: "*.blend1" },
+                { label: "Node Modules", value: "node_modules/" },
+                { label: "Zip 压缩包", value: "*.zip" }
+            ];
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-6xl mx-auto">
+                        
+                        {/* Header */}
+                        <header className="mb-8 text-center md:text-left flex flex-col md:flex-row items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-bold text-slate-900 flex items-center justify-center md:justify-start gap-3">
+                                    <FileCode className="w-10 h-10 text-indigo-600" />
+                                    Unity .gitignore 生成器
+                                </h1>
+                                <p className="text-slate-500 mt-2 text-lg">
+                                    专为 Unity 项目打造，一键生成标准忽略文件，支持自定义规则。
+                                </p>
+                            </div>
+                        </header>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            
+                            {/* Left Column: Controls */}
+                            <div className="lg:col-span-5 space-y-6">
+                                
+                                {/* Input Section */}
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                    <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                                        <Plus className="w-5 h-5 text-indigo-500" />
+                                        添加自定义规则
+                                    </h2>
+                                    <div className="flex gap-2 mb-4">
+                                        <input
+                                            type="text"
+                                            value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            placeholder="例如: Secrets/ 或 *.psd"
+                                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                        />
+                                        <button
+                                            onClick={handleAddRule}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
+                                        >
+                                            添加
+                                        </button>
+                                    </div>
+
+                                    {/* Quick Add Buttons */}
+                                    <div className="mb-6">
+                                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">快速添加常用项</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {quickAdds.map((item, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        if (!customRules.includes(item.value)) {
+                                                            setCustomRules([...customRules, item.value]);
+                                                        }
+                                                    }}
+                                                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-full border border-slate-200 transition-colors"
+                                                >
+                                                    + {item.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Current Custom Rules List */}
+                                    {customRules.length > 0 && (
+                                        <div className="border-t border-slate-100 pt-4">
+                                            <h3 className="text-sm font-semibold text-slate-700 mb-3">已添加的自定义规则:</h3>
+                                            <ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {customRules.map((rule, index) => (
+                                                    <li key={index} className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded border border-slate-200 group">
+                                                        <code className="text-indigo-700 text-sm font-mono">{rule}</code>
+                                                        <button
+                                                            onClick={() => handleRemoveRule(index)}
+                                                            className="text-slate-400 hover:text-red-500 p-1 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                                            title="删除"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {customRules.length === 0 && (
+                                        <div className="border-t border-slate-100 pt-4 text-center py-6 text-slate-400 text-sm">
+                                            暂无自定义规则，使用上方输入框添加
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Actions Card */}
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                                    <h2 className="text-xl font-semibold mb-4">操作</h2>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            onClick={handleCopy}
+                                            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-bold text-white transition-all shadow-md ${
+                                                copied 
+                                                    ? 'bg-green-500 hover:bg-green-600 ring-2 ring-green-300' 
+                                                    : 'bg-slate-800 hover:bg-slate-900 focus:ring-4 focus:ring-slate-200'
+                                            }`}
+                                        >
+                                            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                            {copied ? '已复制！' : '复制内容'}
+                                        </button>
+
+                                        <button
+                                            onClick={handleDownload}
+                                            className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-bold text-indigo-600 bg-indigo-50 border-2 border-indigo-100 hover:bg-indigo-100 hover:border-indigo-200 transition-all"
+                                        >
+                                            <Download className="w-5 h-5" />
+                                            下载文件
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-4 text-center">
+                                        将下载的文件命名为 <code className="bg-slate-100 px-1 rounded text-slate-600">.gitignore</code> 并放入 Unity 项目根目录。
+                                    </p>
+                                </div>
+
+                                {/* Tip */}
+                                <div className="bg-blue-50 text-blue-800 p-4 rounded-lg flex gap-3 text-sm border border-blue-100">
+                                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                                    <div>
+                                        <strong>小贴士:</strong> 此模板已经包含了 Unity 项目中最常见的所有临时文件和构建文件。如果您的项目使用了特殊的第三方插件，请记得在自定义规则中添加它们。
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/* Right Column: Preview */}
+                            <div className="lg:col-span-7 h-full">
+                                <div className="bg-slate-900 rounded-xl shadow-lg overflow-hidden flex flex-col h-[calc(100vh-140px)] min-h-[500px]">
+                                    <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex justify-between items-center">
+                                        <div className="flex gap-2">
+                                            <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                            <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                            <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
+                                        </div>
+                                        <div className="text-slate-400 text-xs font-mono">.gitignore preview</div>
+                                    </div>
+                                    <div className="flex-1 overflow-auto p-0 relative preview-scrollbar">
+                                        <pre className="text-sm font-mono leading-relaxed p-6 text-slate-300 w-full">
+                                        {finalContent.split('\n').map((line, i) => (
+                                            <div key={i} className="table-row">
+                                                <span className="table-cell text-right pr-4 select-none text-slate-600 w-8">{i + 1}</span>
+                                                <span className={`table-cell ${line.startsWith('#') ? 'text-slate-500 italic' : line.startsWith('!') ? 'text-green-400' : 'text-slate-200'}`}>
+                                                    {line}
+                                                </span>
+                                            </div>
+                                        ))}
+                                        </pre>
+                                        
+                                        {/* Floating status badge */}
+                                        <div className="absolute top-4 right-4 flex items-center gap-2 bg-slate-800/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-700">
+                                            <RefreshCw className="w-3 h-3 text-green-400 animate-pulse" />
+                                            <span className="text-xs text-slate-300 font-medium">Auto-generated</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<UnityGitignoreGenerator />);
+    </script>
+</body>
+</html>
